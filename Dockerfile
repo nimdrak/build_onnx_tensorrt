@@ -74,7 +74,7 @@ RUN pip3 install --upgrade pip
 RUN pip3 install setuptools>=41.0.0
 RUN pip3 install jupyter jupyterlab
 # Workaround to remove numpy installed with tensorflow
-RUN pip3 install --upgrade numpy
+#RUN pip3 install --upgrade numpy
 
 # Install Cmake
 RUN cd /tmp && \
@@ -85,6 +85,21 @@ RUN cd /tmp && \
 
 # Download NGC client
 RUN cd /usr/local/bin && wget https://ngc.nvidia.com/downloads/ngccli_cat_linux.zip && unzip ngccli_cat_linux.zip && chmod u+x ngc-cli/ngc && rm ngccli_cat_linux.zip ngc-cli.md5 && echo "no-apikey\nascii\n" | ngc-cli/ngc config set
+
+# Install onnx-tensorrt
+RUN apt-get install -y --no-install-recommends protobuf-compiler libprotobuf-dev
+RUN python -m pip install pycuda==2025.1 numpy==1.23.1 onnx==1.18.0 onnxruntime==1.22.1
+RUN git clone -b release/10.13-GA --single-branch --recurse-submodules https://github.com/onnx/onnx-tensorrt.git && \
+    cd onnx-tensorrt && \
+    mkdir build && \
+    cd build && \
+    cmake -DGPU_ARCHS="37 52 60 61 70 75" .. -DTENSORRT_ROOT=/TensorRT-10.13.0.35/include/ && \
+    make -j && \
+    make install && \
+    cd .. && \
+    python setup.py build && \
+    python -m pip install . && \
+    rm -rf build
 
 # Set environment and working directory
 ENV TRT_LIBPATH /usr/lib/x86_64-linux-gnu
